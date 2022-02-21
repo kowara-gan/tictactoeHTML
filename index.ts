@@ -147,7 +147,6 @@ window.addEventListener('DOMContentLoaded', () => {
             default : firstPlayer = player.HUM_X;
         }
         firstPlayerButton.innerHTML = firstPlayer;
-        userAction();
     }
 
     const changeSecondPlayer = () =>{
@@ -158,7 +157,6 @@ window.addEventListener('DOMContentLoaded', () => {
             default : firstPlayer = player.HUM_X;
         }
         secondPlayerButton.innerHTML = secondPlayer;
-        userAction();
     }
 
     tiles.forEach( (tile: Element, index: number) => {

@@ -14,20 +14,20 @@
 .title {
     color: white;
     text-align: center;
-    font-size: 40px;
-    margin-top: 10%;
+    font-size: 30px;
+    margin-top: 5%;
 }
 
 .display {
     color: white;
-    font-size: 20px;
+    font-size: 15px;
     text-align: center;
     margin-top: 1em;
     margin-bottom: 1em;
 }
  
 .big {
-    font-size: 30px;
+    font-size: 25px;
 }
 
 .hide {
