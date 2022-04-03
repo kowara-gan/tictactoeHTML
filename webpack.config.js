@@ -5,7 +5,7 @@ module.exports = {
   entry: resolve(__dirname,'ts/index.ts'),
   output: {
     filename: 'index.js',
-    path:  resolve(__dirname,'docs'),
+    path: resolve(__dirname,'docs'),
   },
   module: {
     rules: [
