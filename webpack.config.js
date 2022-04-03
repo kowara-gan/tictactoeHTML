@@ -2,10 +2,10 @@ const {resolve}=require('path')
 
 module.exports = {
   mode: 'development',
-  entry: './index.ts',
+  entry: resolve(__dirname,'ts/index.ts'),
   output: {
     filename: 'index.js',
-    path: `${__dirname}/`,
+    path:  resolve(__dirname,'docs'),
   },
   module: {
     rules: [
@@ -28,3 +28,4 @@ module.exports = {
   },
   
 };
+
