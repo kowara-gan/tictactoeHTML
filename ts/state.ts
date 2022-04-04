@@ -16,6 +16,11 @@ export const updateMove = (state:State,move:number):void=>{
     state.board[move] = state.isFirst ? 'X' : 'O';
     state.isFirst = !state.isFirst;
 }
+//moveのマスにマークを更新
+export const updateRemove = (state:State,move:number):void=>{
+    state.board[move] = '';
+    state.isFirst = !state.isFirst;
+}
 //勝敗のラインがある場合そのマスを返す
 export const getLine = (state:State): number[]=>{
     let ret: number[]=[];

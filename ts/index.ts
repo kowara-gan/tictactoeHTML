@@ -5,21 +5,27 @@ import * as Times from './times';
 type Result='X_WON'|'O_WON'|'TIE';
 //プレイヤーを表すtype
 type PlayerType={
-    player: 'X'|'O';
     mode: 'HUM' | 'RDM' | 'CPU';
+}
+type ProcedureType={
+    mode: 'AUTO' | 'CLICK' ;
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     //初期化
     const state :State.State = {board:['', '', '', '', '', '', '', '', ''],isFirst:true};
+    let movesList:number[]=[];
 
-    let firstPlayer: PlayerType = {player:'X',mode:'CPU'};
-    let secondPlayer: PlayerType = {player:'O',mode:'CPU'};
+    let firstProcedure: ProcedureType = {mode:'AUTO'};
+    let secondProcedure: ProcedureType = {mode:'AUTO'};
+    let firstPlayer: PlayerType = {mode:'CPU'};
+    let secondPlayer: PlayerType = {mode:'CPU'};
     let isGameActive = true;
     let isWhileMoving = false;
     //moveのマスにOXマークを書く
     const update = (move: number) => {
         tiles[move].innerHTML = state.isFirst ? svgX : svgO;
+        movesList.push(move);
         State.updateMove(state,move);
         //ターン情報を更新
         playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirst ? svgX : svgO);
@@ -54,19 +60,22 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     };
     //現在のプレイヤーモードを確認 'HUM' | 'RDM' | 'CPU'
-    const isMode = (mode: string):boolean => {
+    const isPlayerMode = (mode: string):boolean => {
         return state.isFirst&&firstPlayer.mode==mode||!state.isFirst&&secondPlayer.mode==mode;
+    };
+    const isAUTO = ():boolean => {
+        return state.isFirst&&firstProcedure.mode=='AUTO'||!state.isFirst&&secondProcedure.mode=='AUTO';
     };
     //プレイヤーの入力があった場合
     const userAction = async (move?: number) => {
         if(isWhileMoving ||!isGameActive)return;
-        if(!isMode('HUM')){//コンピュータモード
+        if(!isPlayerMode('HUM')){//コンピュータモード
             await cpuAction();
         }else if(move!=undefined&&State.isValidMove(state,move)) {//プレイヤーモードかつマスの情報が正しい
             update(move);
         }
-
-        if(!isMode('HUM')){//コンピュータモード
+        if(!isAUTO())return;
+        if(!isPlayerMode('HUM')){//コンピュータモード
             await cpuAction();
         }
     }
@@ -78,7 +87,7 @@ window.addEventListener('DOMContentLoaded', () => {
         await Times.wait(500);
         //moveに正しいマスを格納
         let move: number;
-        if(isMode('RDM')){//ランダムモード
+        if(isPlayerMode('RDM')){//ランダムモード
             while(true){//正しいマスの情報がでるまでランダムで繰り返し
                 move = Math.floor(Math.random()*9);
                 if(State.isValidMove(state,move))break;
@@ -87,16 +96,32 @@ window.addEventListener('DOMContentLoaded', () => {
         //moveのマスにOXマークを書く
         if(move!=undefined)update(move);
         isWhileMoving=false;
-
-        if(!isMode('HUM')){//コンピュータモード
+        if(!isAUTO())return;
+        if(!isPlayerMode('HUM')){//コンピュータモード
             await cpuAction();
         }
+    }
+    //戻るボタンを押した場合
+    const onBack = () => {
+        let remove = movesList.pop();
+        if(remove==undefined)return;
+        tiles[remove].innerHTML = '';
+        State.updateRemove(state,remove);
+        isGameActive = true;
+        playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirst ? svgX : svgO);
+        tiles.forEach((tile: Element)=> {
+            tile.classList.remove('three');
+        });
+        //AUTO中の遅延を止める
+        Times.deleteWait();
+        isWhileMoving = false;
     }
     //リセットボタンを押した場合
     const onReset = () => {
         State.resetState(state);
         isGameActive = true;
         playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirst ? svgX : svgO);
+        movesList=[];
         //三目並べの画面初期化
         tiles.forEach((tile: Element)=> {
             tile.innerHTML = '';
@@ -106,9 +131,33 @@ window.addEventListener('DOMContentLoaded', () => {
         Times.deleteWait();
         isWhileMoving = false;
         //再起動
-        if(!isMode('HUM')){
+        if(!isPlayerMode('HUM')){
             userAction();
         }
+    }
+    //１ＰProcedureボタンを押した場合
+    const onChangeFirstProcedure = () =>{
+        switch(firstProcedure.mode){
+            case 'AUTO': {firstProcedure.mode = 'CLICK'; break;}
+            case 'CLICK': {firstProcedure.mode = 'AUTO'; break;}
+            default : firstProcedure.mode = 'AUTO';
+        }
+        //AUTO中の遅延を止める
+        Times.deleteWait();
+        isWhileMoving = false;
+        firstProcedureButton.innerHTML = firstProcedure.mode;
+    }
+    //２ＰProcedureボタンを押した場合
+    const onChangeSecondProcedure = () =>{
+        switch(secondProcedure.mode){
+            case 'AUTO': {secondProcedure.mode = 'CLICK'; break;}
+            case 'CLICK': {secondProcedure.mode = 'AUTO'; break;}
+            default : secondProcedure.mode = 'AUTO';
+        }
+        //AUTO中の遅延を止める
+        Times.deleteWait();
+        isWhileMoving = false;
+        secondProcedureButton.innerHTML = secondProcedure.mode;
     }
     //１Ｐボタンを押した場合
     const onChangeFirstPlayer = () =>{
@@ -145,8 +194,17 @@ window.addEventListener('DOMContentLoaded', () => {
     //アナウンス文
     const playerDisplay = document.querySelector('.display-player')!;
     //各種ボタン
+    const backButton = document.querySelector('#back')!;
+    backButton.addEventListener('click', onBack);
+    const firstProcedureButton = document.querySelector('#firstProcedure')!;
+    firstProcedureButton.addEventListener('click', onChangeFirstProcedure);
+    firstProcedureButton.innerHTML = firstProcedure.mode;
+    const secondProcedureButton = document.querySelector('#secondProcedure')!;
+    secondProcedureButton.addEventListener('click', onChangeSecondProcedure);
+
     const resetButton = document.querySelector('#reset')!;
     resetButton.addEventListener('click', onReset);
+    secondProcedureButton.innerHTML = secondProcedure.mode;
     const firstPlayerButton = document.querySelector('#firstPlayer')!;
     firstPlayerButton.addEventListener('click', onChangeFirstPlayer);
     firstPlayerButton.innerHTML = firstPlayer.mode+"_X";
