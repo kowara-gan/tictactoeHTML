@@ -1,117 +1,103 @@
 import * as State from './state';
 import * as Times from './times';
 
-window.addEventListener('DOMContentLoaded', () => {
-    let  state: State.State = new State.State();
+//リザルトを表すtype
+type Result='X_WON'|'O_WON'|'TIE';
+//プレイヤーを表すtype
+type PlayerType={
+    player: 'X'|'O';
+    mode: 'HUM' | 'RDM' | 'CPU';
+}
 
-    const result ={
-        PLAYERX_WON: 'PLAYERX_WON',
-        PLAYERO_WON:'PLAYERO_WON',
-        TIE: 'TIE',
-    }as const;
-    type Result=typeof result[keyof typeof result];
-    const player ={
-        HUM_X: 'HUM_X',
-        HUM_O: 'HUM_O',
-        RDM_X: 'RDM_X',
-        RDM_O: 'RDM_O',
-        CPU_X: 'CPU_X',
-        CPU_O:'CPU_O',
-    }as const;
-    let firstPlayer: typeof player.HUM_X |typeof player.CPU_X|typeof player.RDM_X = player.CPU_X;
-    let secondPlayer: typeof player.HUM_O |typeof player.CPU_O|typeof player.RDM_O = player.CPU_O;
-    
+window.addEventListener('DOMContentLoaded', () => {
+    //初期化
+    const state :State.State = {board:['', '', '', '', '', '', '', '', ''],isFirst:true};
+
+    let firstPlayer: PlayerType = {player:'X',mode:'CPU'};
+    let secondPlayer: PlayerType = {player:'O',mode:'CPU'};
     let isGameActive = true;
     let isWhileMoving = false;
-
-    const update = (index: number) => {
-        tiles[index].innerHTML = state.isFirstPlayerTurn ? svgX : svgO;
-        state.move(index);
-        playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirstPlayerTurn ? svgX : svgO);
-        //state.show();
-        let roundWon =false;
-        for (let i = 0; i <= 7; i++) {
-            const winCondition = State.winningConditions()[i];
-            const a = state.board[winCondition[0]];
-            const b = state.board[winCondition[1]];
-            const c = state.board[winCondition[2]];
-            if (a === '' || b === '' || c === '') {
-                continue;
-            }
-            if (a === b && b === c) {
-                tiles[winCondition[0]].classList.add('three');
-                tiles[winCondition[1]].classList.add('three');
-                tiles[winCondition[2]].classList.add('three');
-                roundWon = true;
-            }
-        }
-
-        if (roundWon) {
-            announce(state.isFirstPlayerTurn ? result.PLAYERX_WON : result.PLAYERO_WON);
+    //moveのマスにOXマークを書く
+    const update = (move: number) => {
+        tiles[move].innerHTML = state.isFirst ? svgX : svgO;
+        State.updateMove(state,move);
+        //ターン情報を更新
+        playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirst ? svgX : svgO);
+        //勝敗判定
+        if (State.isLose(state)){
+            let tileNums=State.getLine(state);//揃ったラインを入手してマスの色を変更
+            tiles[tileNums[0]].classList.add('three');
+            tiles[tileNums[1]].classList.add('three');
+            tiles[tileNums[2]].classList.add('three');
+            announce(state.isFirst ? 'X_WON' : 'O_WON');
             isGameActive = false;
             return;
         }
-
-        if (state.isTie()){
-            announce(result.TIE);
+        //引き分け判定
+        if (State.isTie(state)){
+            announce('TIE');
             isGameActive = false;
             return;
         }
     }
-
-    const announce = (type: Result) => {
-        switch(type){
-            case result.PLAYERO_WON:
+    //勝敗が決まるか、引き分けの時に文字情報を更新
+    const announce = (result: Result) => {
+        switch(result){
+            case 'O_WON':
                 playerDisplay.innerHTML = svgO +'<p class="announce"> Won</p>';
                 break;
-            case result.PLAYERX_WON:
+            case 'X_WON':
                 playerDisplay.innerHTML = svgX +'<p class="announce"> Won</p>';
                 break;
-            case result.TIE:
+            case 'TIE':
                 playerDisplay.innerHTML = '<p class="announce">Tie</p>';
         }
     };
-
-    const userAction = async (index?: number) => {
+    //現在のプレイヤーモードを確認 'HUM' | 'RDM' | 'CPU'
+    const isMode = (mode: string):boolean => {
+        return state.isFirst&&firstPlayer.mode==mode||!state.isFirst&&secondPlayer.mode==mode;
+    };
+    //プレイヤーの入力があった場合
+    const userAction = async (move?: number) => {
         if(isWhileMoving ||!isGameActive)return;
-        if(state.isFirstPlayerTurn&&firstPlayer!=player.HUM_X||!state.isFirstPlayerTurn&&secondPlayer!=player.HUM_O){
+        if(!isMode('HUM')){//コンピュータモード
             await cpuAction();
-        }else if(index!=undefined&&state.isValidMove(index)) {
-            update(index);
+        }else if(move!=undefined&&State.isValidMove(state,move)) {//プレイヤーモードかつマスの情報が正しい
+            update(move);
         }
 
-        if(state.isFirstPlayerTurn&&firstPlayer!=player.HUM_X||!state.isFirstPlayerTurn&&secondPlayer!=player.HUM_O){
+        if(!isMode('HUM')){//コンピュータモード
             await cpuAction();
         }
     }
-
+    //コンピュータの入力
     const cpuAction = async () => {
         if(!isGameActive)return;
+        //遅延の開始
         isWhileMoving=true;
         await Times.wait(500);
-        let index: number;
-        if(state.isFirstPlayerTurn&&firstPlayer==player.RDM_X||!state.isFirstPlayerTurn&&secondPlayer==player.RDM_O){
-            while(true){
-                index = Math.floor(Math.random()*9);
-                if(state.isValidMove(index))break;
+        //moveに正しいマスを格納
+        let move: number;
+        if(isMode('RDM')){//ランダムモード
+            while(true){//正しいマスの情報がでるまでランダムで繰り返し
+                move = Math.floor(Math.random()*9);
+                if(State.isValidMove(state,move))break;
             }
-        }else{index=state.alphaBetaIndex();}
-        if(index!=undefined)update(index);
+        }else{move=State.startAlphaBeta(state);}//αβCPUモード
+        //moveのマスにOXマークを書く
+        if(move!=undefined)update(move);
         isWhileMoving=false;
-        if(state.isFirstPlayerTurn&&firstPlayer!=player.HUM_X||!state.isFirstPlayerTurn&&secondPlayer!=player.HUM_O){
+
+        if(!isMode('HUM')){//コンピュータモード
             await cpuAction();
         }
     }
     //リセットボタンを押した場合
     const onReset = () => {
-        state.board = ['', '', '', '', '', '', '', '', ''];
+        State.resetState(state);
         isGameActive = true;
- 
-        if (!state.isFirstPlayerTurn) {
-            state.isFirstPlayerTurn = !state.isFirstPlayerTurn;
-            playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirstPlayerTurn ? svgX : svgO);
-        }
-
+        playerDisplay.innerHTML = '<p class="announce">Turn of&nbsp;&nbsp;</p>'+(state.isFirst ? svgX : svgO);
+        //三目並べの画面初期化
         tiles.forEach((tile: Element)=> {
             tile.innerHTML = '';
             tile.classList.remove('three');
@@ -119,42 +105,42 @@ window.addEventListener('DOMContentLoaded', () => {
         //AUTO中の遅延を止める
         Times.deleteWait();
         isWhileMoving = false;
-        if(state.isFirstPlayerTurn&&firstPlayer!=player.HUM_X){
+        //再起動
+        if(!isMode('HUM')){
             userAction();
         }
     }
     //１Ｐボタンを押した場合
     const onChangeFirstPlayer = () =>{
-        switch(firstPlayer){
-            case 'CPU_X': {firstPlayer = player.HUM_X; break;}
-            case 'HUM_X': {firstPlayer = player.RDM_X; break;}
-            case 'RDM_X': {firstPlayer = player.CPU_X; break;}
-            default : firstPlayer = player.HUM_X;
+        switch(firstPlayer.mode){
+            case 'CPU': {firstPlayer.mode = 'HUM'; break;}
+            case 'HUM': {firstPlayer.mode = 'RDM'; break;}
+            case 'RDM': {firstPlayer.mode = 'CPU'; break;}
+            default : firstPlayer.mode = 'HUM';
         }
         //AUTO中の遅延を止める
         Times.deleteWait();
         isWhileMoving = false;
-        firstPlayerButton.innerHTML = firstPlayer;
+        firstPlayerButton.innerHTML = firstPlayer.mode+"_X";
     }
     //２Ｐボタンを押した場合
     const onChangeSecondPlayer = () =>{
-        switch(secondPlayer){
-            case 'CPU_O': {secondPlayer = player.HUM_O; break;}
-            case 'HUM_O': {secondPlayer = player.RDM_O; break;}
-            case 'RDM_O': {secondPlayer = player.CPU_O; break;}
-            default : firstPlayer = player.HUM_X;
+        switch(secondPlayer.mode){
+            case 'CPU': {secondPlayer.mode = 'HUM'; break;}
+            case 'HUM': {secondPlayer.mode = 'RDM'; break;}
+            case 'RDM': {secondPlayer.mode = 'CPU'; break;}
+            default : secondPlayer.mode = 'HUM';
         }
         //AUTO中の遅延を止める
         Times.deleteWait();
         isWhileMoving = false;
-        secondPlayerButton.innerHTML = secondPlayer;
+        secondPlayerButton.innerHTML = secondPlayer.mode+"_O";
     }
-
     //htmlの要素を入手、クリック関数を登録
     //9マスグリッド
     const tiles:Element[] = Array.from(document.querySelectorAll('.tile'))!;
-    tiles.forEach( (tile: Element, index: number) => {
-        tile.addEventListener('click', () => userAction(index));
+    tiles.forEach( (tile: Element, move: number) => {
+        tile.addEventListener('click', () => userAction(move));
     });
     //アナウンス文
     const playerDisplay = document.querySelector('.display-player')!;
@@ -163,10 +149,10 @@ window.addEventListener('DOMContentLoaded', () => {
     resetButton.addEventListener('click', onReset);
     const firstPlayerButton = document.querySelector('#firstPlayer')!;
     firstPlayerButton.addEventListener('click', onChangeFirstPlayer);
-    firstPlayerButton.innerHTML = firstPlayer;
+    firstPlayerButton.innerHTML = firstPlayer.mode+"_X";
     const secondPlayerButton = document.querySelector('#secondPlayer')!;
     secondPlayerButton.addEventListener('click', onChangeSecondPlayer);
-    secondPlayerButton.innerHTML = secondPlayer;
+    secondPlayerButton.innerHTML = secondPlayer.mode+"_O";
     //svgデータ
     const svgO:string = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1em" height="1em" viewBox="0 0 40 40"fill="#d82a47"><path d="M20,10A10,10,0,1,1,10,20,10,10,0,0,1,20,10M20,0A20,20,0,1,0,40,20,20,20,0,0,0,20,0Z"/></svg>'
     const svgX:string = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1em" height="1em" viewBox="0 0 40 40"fill="#00aaf8"><path d="M32 40 L20 28 L8 40 L0 32 L12 20 L0 8 L8 0 L20 12 L32 0 L40 8 L28 20 L40 32" /></svg>'
