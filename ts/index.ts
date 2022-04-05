@@ -7,6 +7,7 @@ type Result='X_WON'|'O_WON'|'TIE';
 type PlayerType={
     mode: 'HUM' | 'RDM' | 'CPU';
 }
+//進行方法を表すtype
 type ProcedureType={
     mode: 'AUTO' | 'CLICK' ;
 }
@@ -59,23 +60,24 @@ window.addEventListener('DOMContentLoaded', () => {
                 playerDisplay.innerHTML = '<p class="announce">Tie</p>';
         }
     };
-    //現在のプレイヤーモードを確認 'HUM' | 'RDM' | 'CPU'
-    const isPlayerMode = (mode: string):boolean => {
+    //現在のプレイヤータイプを確認 'HUM' | 'RDM' | 'CPU'
+    const isPlayerType = (mode: string):boolean => {
         return state.isFirst&&firstPlayer.mode==mode||!state.isFirst&&secondPlayer.mode==mode;
     };
+    //現在の進行タイプが'AUTO'か確認 'AUTO' | 'CLICK' 
     const isAUTO = ():boolean => {
         return state.isFirst&&firstProcedure.mode=='AUTO'||!state.isFirst&&secondProcedure.mode=='AUTO';
     };
     //プレイヤーの入力があった場合
     const userAction = async (move?: number) => {
         if(isWhileMoving ||!isGameActive)return;
-        if(!isPlayerMode('HUM')){//コンピュータモード
+        if(!isPlayerType('HUM')){//コンピュータタイプ
             await cpuAction();
-        }else if(move!=undefined&&State.isValidMove(state,move)) {//プレイヤーモードかつマスの情報が正しい
+        }else if(move!=undefined&&State.isValidMove(state,move)) {//プレイヤータイプかつマスの情報が正しい
             update(move);
         }
         if(!isAUTO())return;
-        if(!isPlayerMode('HUM')){//コンピュータモード
+        if(!isPlayerType('HUM')){//コンピュータタイプ
             await cpuAction();
         }
     }
@@ -87,17 +89,17 @@ window.addEventListener('DOMContentLoaded', () => {
         await Times.wait(500);
         //moveに正しいマスを格納
         let move: number;
-        if(isPlayerMode('RDM')){//ランダムモード
+        if(isPlayerType('RDM')){//ランダムタイプ
             while(true){//正しいマスの情報がでるまでランダムで繰り返し
                 move = Math.floor(Math.random()*9);
                 if(State.isValidMove(state,move))break;
             }
-        }else{move=State.startAlphaBeta(state);}//αβCPUモード
+        }else{move=State.startAlphaBeta(state);}//αβCPUタイプ
         //moveのマスにOXマークを書く
         if(move!=undefined)update(move);
         isWhileMoving=false;
         if(!isAUTO())return;
-        if(!isPlayerMode('HUM')){//コンピュータモード
+        if(!isPlayerType('HUM')){//コンピュータタイプ
             await cpuAction();
         }
     }
@@ -131,7 +133,7 @@ window.addEventListener('DOMContentLoaded', () => {
         Times.deleteWait();
         isWhileMoving = false;
         //再起動
-        if(!isPlayerMode('HUM')){
+        if(!isPlayerType('HUM')){
             userAction();
         }
     }
@@ -185,7 +187,7 @@ window.addEventListener('DOMContentLoaded', () => {
         isWhileMoving = false;
         secondPlayerButton.innerHTML = secondPlayer.mode+"_O";
     }
-    //htmlの要素を入手、クリック関数を登録
+    //htmlの要素を入手、イベント関数を登録
     //9マスグリッド
     const tiles:Element[] = Array.from(document.querySelectorAll('.tile'))!;
     tiles.forEach( (tile: Element, move: number) => {
