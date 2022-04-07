@@ -50,6 +50,17 @@
 }
 .three {
     background-color:rgb(212, 210, 207);
+    animation: rotationa 2s ease 0s 1 alternate none running;
+}
+@keyframes rotationa{
+    0%{
+        transform: scale(.3);
+        background-color:rgb(34, 33, 33);
+    }
+    100%{
+        transform: scale(1);
+        background-color:rgb(212, 210, 207);
+    }
 }
 .controls {
     display: flex;
