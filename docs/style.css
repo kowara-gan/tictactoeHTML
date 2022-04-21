@@ -81,11 +81,11 @@
     cursor: pointer;
 }
 #reset,#back{
-    background-color: #16be00;
+    background-color: #3daf2e;
 }
 #firstPlayer,#firstProcedure {
-    background-color: #00aaf8;
+    background-color: #1ea4e2;
 }
 #secondPlayer,#secondProcedure {
-    background-color: #d82a47;
+    background-color: #cc2944;
 }
