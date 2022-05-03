@@ -69,23 +69,33 @@ const nextMoves = (state :State) :number[]=> {
     });
     return ret;
 }
+export const getRDMMove=(state:State):number=>{
+    let move:number;
+    if(isLose(state)||isTie(state))return -1;
+    while(true){//正しいマスの情報がでるまでランダムで繰り返し
+        move = Math.floor(Math.random()*9);
+        if(isValidMove(state,move))break;
+    }
+    return move;
+}
 //αβ法の中身
-const alphaBeta=(state: State,alpha: number,beta: number):number=>{
+const alphaBeta=(state: State,alpha: number,beta: number,depth: number):number=>{
     if(isLose(state))return -1;
     if(isTie(state))return 0;
+    if(depth==0)return 0;
     nextMoves(state).forEach( (move: number) => {
-        const score = -alphaBeta(nextState(state,move),-beta,-alpha);
+        const score = -alphaBeta(nextState(state,move),-beta,-alpha,depth-1);
         if(score >alpha)alpha=score;
         if(alpha>=beta)return alpha;
     });
     return alpha;
 }
 //αβ法を使用
-export const startAlphaBeta=(state:State):number=>{
+export const getAlphaBetaMove=(state:State,depth: number):number=>{
     let bestActions: number[]=[];
     let bestScore=Number.MIN_SAFE_INTEGER;
     nextMoves(state).forEach( (move: number) => {
-        const score = -alphaBeta(nextState(state,move),Number.MIN_SAFE_INTEGER,Number.MAX_SAFE_INTEGER);
+        const score = -alphaBeta(nextState(state,move),Number.MIN_SAFE_INTEGER,Number.MAX_SAFE_INTEGER, depth);
         if(score >bestScore){
             bestScore=score;
             bestActions.splice(0);

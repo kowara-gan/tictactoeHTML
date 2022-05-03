@@ -5,7 +5,7 @@ import * as Times from './times';
 type Result='X_WON'|'O_WON'|'TIE';
 //プレイヤーを表すtype
 type PlayerType={
-    mode: 'HUM' | 'RDM' | 'CPU';
+    mode: 'HUM' | 'RDM' | 'GOD' | 'CPU';
 }
 //進行方法を表すtype
 type ProcedureType={
@@ -60,7 +60,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 playerDisplay.innerHTML = '<p class="announce">Tie</p>';
         }
     };
-    //現在のプレイヤータイプを確認 'HUM' | 'RDM' | 'CPU'
+    //現在のプレイヤータイプを確認 'HUM' | 'RDM' | 'GOT' | 'CPU'
     const isPlayerType = (mode: string):boolean => {
         return state.isFirst&&firstPlayer.mode==mode||!state.isFirst&&secondPlayer.mode==mode;
     };
@@ -90,11 +90,12 @@ window.addEventListener('DOMContentLoaded', () => {
         //moveに正しいマスを格納
         let move: number;
         if(isPlayerType('RDM')){//ランダムタイプ
-            while(true){//正しいマスの情報がでるまでランダムで繰り返し
-                move = Math.floor(Math.random()*9);
-                if(State.isValidMove(state,move))break;
-            }
-        }else{move=State.startAlphaBeta(state);}//αβCPUタイプ
+            move = State.getRDMMove(state);
+        }else if(isPlayerType('GOD')){//GODタイプ
+            move=State.getAlphaBetaMove(state,9);
+        }else{//CPUタイプ
+            move=State.getAlphaBetaMove(state,1);
+        }
         //moveのマスにOXマークを書く
         if(move!=undefined)update(move);
         isWhileMoving=false;
@@ -166,7 +167,8 @@ window.addEventListener('DOMContentLoaded', () => {
         switch(firstPlayer.mode){
             case 'CPU': {firstPlayer.mode = 'HUM'; break;}
             case 'HUM': {firstPlayer.mode = 'RDM'; break;}
-            case 'RDM': {firstPlayer.mode = 'CPU'; break;}
+            case 'RDM': {firstPlayer.mode = 'GOD'; break;}
+            case 'GOD': {firstPlayer.mode = 'CPU'; break;}
             default : firstPlayer.mode = 'HUM';
         }
         //AUTO中の遅延を止める
@@ -179,7 +181,8 @@ window.addEventListener('DOMContentLoaded', () => {
         switch(secondPlayer.mode){
             case 'CPU': {secondPlayer.mode = 'HUM'; break;}
             case 'HUM': {secondPlayer.mode = 'RDM'; break;}
-            case 'RDM': {secondPlayer.mode = 'CPU'; break;}
+            case 'RDM': {secondPlayer.mode = 'GOD'; break;}
+            case 'GOD': {firstPlayer.mode = 'CPU'; break;}
             default : secondPlayer.mode = 'HUM';
         }
         //AUTO中の遅延を止める
